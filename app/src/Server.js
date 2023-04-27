@@ -75,6 +75,7 @@ const qS = require('qs');
 const slackEnabled = config.slack.enabled;
 const slackSigningSecret = config.slack.signingSecret;
 const bodyParser = require('body-parser');
+const organizer = require('../api/organizer/organizer');
 
 const app = express();
 
@@ -243,8 +244,8 @@ function startServer() {
         return res.redirect("https://deepbluework.com/")
     });
     
-    //external api call to validate organizer by password
-    // app.post('/organizer', organizer);
+    // external api call to validate organizer by password
+    app.post('/organizer', organizer);
 
     // // main page
     // app.get(['/'], (req, res) => {
