@@ -23,7 +23,7 @@ const RoomURL = window.location.href;
 
 const socket = io({ transports: ['websocket'] });
 
-const surveyActive = true;
+const surveyActive = false;
 
 const url = {
     survey: 'https://www.questionpro.com/t/AUs7VZq02P',
@@ -74,6 +74,10 @@ let peer_name = getPeerName();
 let peer_uuid = getPeerUUID();
 let isScreenAllowed = getScreen();
 let notify = getNotify();
+
+//custom change
+let token = getToken();
+//end
 
 let peer_info = null;
 
@@ -208,6 +212,25 @@ function setTippy(elem, content, placement, allowHTML = false) {
         allowHTML: allowHTML,
     });
 }
+
+//custom change
+
+// ####################################################
+// get Token Through Cookie
+// ####################################################
+function extractTokenAndRoomFromCookie() {
+    const cookies = document.cookie.split(';').reduce((cookies, cookie) => {
+        const [name, value] = cookie.split('=').map((c) => c.trim());
+        cookies[name] = decodeURIComponent(value);
+        return cookies;
+    }, {});
+
+    if (cookies.data) {
+        return JSON.parse(cookies.data);
+    }
+}
+
+//end
 
 // ####################################################
 // GET ROOM ID
@@ -406,16 +429,30 @@ function getNotify() {
     return true;
 }
 
-function getPeerName() {
-    const qs = new URLSearchParams(window.location.search);
-    const name = filterXSS(qs.get('name'));
-    if (isHtml(name)) {
-        console.log('Direct join', { name: 'Invalid name' });
-        return 'Invalid name';
-    }
-    console.log('Direct join', { name: name });
-    return name;
+    //custom change
+    function getPeerName() {
+        // const qs = new URLSearchParams(window.location.search);
+        // const name = filterXSS(qs.get('name'));
+        // if (isHtml(name)) {
+        //     console.log('Direct join', { name: 'Invalid name' });
+        //     return 'Invalid name';
+        // }
+        // console.log('Direct join', { name: name });
+        // return name;
+
+        const { name } = extractTokenAndRoomFromCookie();
+        return name;
+
 }
+
+function getToken() {
+    // let qs = new URLSearchParams(window.location.search);
+    // return qs.get('token');
+    const { token } = extractTokenAndRoomFromCookie();
+    return token;
+}
+
+    //end
 
 function getPeerUUID() {
     if (lS.getItemLocalStorage('peer_uuid')) {
@@ -443,12 +480,15 @@ function getRoomPassword() {
 // SOME PEER INFO
 // ####################################################
 
+//custom change
 function getPeerInfo() {
     peer_info = {
         join_data_time: getDataTimeString(),
         peer_uuid: peer_uuid,
         peer_id: socket.id,
+        token: token,
         peer_name: peer_name,
+        is_waiting: true,
         peer_presenter: isPresenter,
         peer_audio: isAudioAllowed,
         peer_video: isVideoAllowed,
@@ -467,9 +507,13 @@ function getPeerInfo() {
     };
 }
 
+//end
+
 // ####################################################
 // ENTER YOUR NAME | Enable/Disable AUDIO/VIDEO
 // ####################################################
+
+//custom change 
 
 function whoAreYou() {
     console.log('04 ----> Who are you');
@@ -477,6 +521,9 @@ function whoAreYou() {
 
     hide(loadingDiv);
     document.body.style.background = 'var(--body-bg)';
+
+    let qs = new URLSearchParams(window.location.search);
+    let isOrganizer = !!(qs.get('organizer'));
 
     if (peer_name) {
         checkMedia();
@@ -493,41 +540,158 @@ function whoAreYou() {
     const initUser = document.getElementById('initUser');
     initUser.classList.toggle('hidden');
 
+    const inputFields = [
+        {
+            id: 'swal-input1',
+            placeholder: 'Username',
+            type: 'text',
+            value: default_name,
+            validation: {
+            required: true,
+            errorMessage: 'Please enter your username'
+            }
+        }
+        ];
+
+        if (isOrganizer) {
+        inputFields.push({
+            id: 'swal-input2',
+            placeholder: 'Password',
+            type: 'password',
+            validation: {
+            required: true,
+            errorMessage: 'Please enter your password'
+            }
+        });
+        }
+
+        const html =`
+    ${inputFields.map(field =>
+        `<input id="${field.id}" class="swal2-input" type="${field.type}" value="${field.value ? field.value : ''}" placeholder="${field.placeholder}" style="width: 100% !important; margin-inline: 0 !important;" required>`
+    ).join('')}`;
+
+    const customCss = `
+    .swal2-input {
+        margin-inline: 0 !important;
+        width: 100% !important;
+    }
+    `;
+
+    const wrapper = document.createElement('div');
+        wrapper.appendChild(initUser);
+        wrapper.insertAdjacentHTML('beforeend', html);
+
     Swal.fire({
         allowOutsideClick: false,
         allowEscapeKey: false,
         background: swalBackground,
-        title: 'MiroTalk SFU',
-        input: 'text',
-        inputPlaceholder: 'Enter your name',
-        inputValue: default_name,
-        html: initUser, // Inject HTML
+        title: 'Join Meetblue',
+        // input: 'text',
+        // inputPlaceholder: 'Enter your name',
+        // inputValue: default_name,
+        html: wrapper, // Inject HTML
         confirmButtonText: `Join meeting`,
+        preConfirm: () => {
+            let username = document.getElementById('swal-input1').value;
+            let password = isOrganizer ? document.getElementById('swal-input2').value : '';
+
+            if(username.trim() === ''){
+                return Swal.showValidationMessage('Please enter your name');
+            }
+
+            username = filterXSS(username);
+            if (isHtml(username)) return 'Invalid username!';
+            
+            if (!getCookie(room_id + '_name')) {
+                window.localStorage.peer_name = username;
+            }
+            setCookie(room_id + '_name', username, 30);
+            peer_name = username;
+
+            if(isOrganizer && password.trim() === ''){
+                return Swal.showValidationMessage('Please Enter Your password')
+            }
+            
+            password = filterXSS(password);
+            if (isHtml(password)) return 'Invalid password!';
+
+            return (isOrganizer && password.trim() !== '') ? checkOrganizerByPassword(room_id, password)
+            .then(data => {
+                if(data.allow){
+                    peer_pass_organizer = true;
+                    return {peer_name}
+                }
+                else return Swal.showValidationMessage(`Password Doesn't Match`);
+            })
+            .catch(error => {
+                return Swal.showValidationMessage(`${error}`);
+            }) : { peer_name }
+        },
         showClass: {
             popup: 'animate__animated animate__fadeInDown',
         },
         hideClass: {
             popup: 'animate__animated animate__fadeOutUp',
         },
-        inputValidator: (name) => {
-            if (!name) return 'Please enter your name';
-            name = filterXSS(name);
-            if (isHtml(name)) return 'Invalid name!';
-            if (!getCookie(room_id + '_name')) {
-                window.localStorage.peer_name = name;
-            }
-            setCookie(room_id + '_name', name, 30);
-            peer_name = name;
+        customClass: {
+            container: 'swal2-container-custom',
+            confirmButton: 'swal2-confirm-button-custom',
+            cancelButton: 'swal2-cancel-button-custom',
         },
-    }).then(() => {
+        onOpen: () => {
+            const style = document.createElement('style');
+            style.innerHTML = customCss;
+            document.head.appendChild(style);
+        },
+        // inputValidator: (name) => {
+        //     if (!name) return 'Please enter your name';
+        //     name = filterXSS(name);
+        //     if (isHtml(name)) return 'Invalid name!';
+        //     if (!getCookie(room_id + '_name')) {
+        //         window.localStorage.peer_name = name;
+        //     }
+        //     setCookie(room_id + '_name', name, 30);
+        //     peer_name = name;
+        // },
+    }).then((result) => {
         if (initStream && !joinRoomWithScreen) {
             stopTracks(initStream);
             hide(initVideo);
         }
-        getPeerInfo();
-        joinRoom(peer_name, room_id);
+        
+        if (result.isConfirmed) {
+            const { username, peer_pass_organizer } = result.value;
+            getPeerInfo();
+            joinRoom(peer_name, room_id);
+            console.log(`Username: ${username}, Password: ${peer_pass_organizer}`);
+        }
     });
 }
+
+
+function checkOrganizerByPassword(room_id, password) {
+    return fetch('/organizer', {
+      method: 'POST',
+      body: JSON.stringify({ room: room_id, password }),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => {
+      if (response.ok && response.status === 200) {
+        return response.json();
+      } else if(response.status === 401) {
+        throw new Error('Password is invalid');
+      } else {
+        throw new Error('Something wen"t wrong');
+      }
+    })
+    .catch(error => {
+      throw new Error('Network error: ' + error.message);
+    });
+  }
+
+//end
 
 function handleAudio(e) {
     isAudioAllowed = isAudioAllowed ? false : true;
@@ -654,7 +818,7 @@ async function shareRoom(useNavigator = false) {
             } else if (result.isDenied) {
                 let message = {
                     email: '',
-                    subject: 'Please join our MiroTalkSfu Video Chat Meeting',
+                    subject: 'Please join our Meetblue Video Chat Meeting',
                     body: 'Click to join: ' + RoomURL,
                 };
                 shareRoomByEmail(message);
@@ -1527,7 +1691,7 @@ function handleRoomClientEvents() {
         if (surveyActive) {
             leaveFeedback();
         } else {
-            openURL('/newroom');
+            openURL('https://deepbluework.com');
         }
     });
 }
@@ -1544,7 +1708,7 @@ function leaveFeedback() {
         background: swalBackground,
         imageUrl: image.feedback,
         title: 'Leave a feedback',
-        text: 'Do you want to rate your MiroTalk experience?',
+        text: 'Do you want to rate your Meetblue experience?',
         confirmButtonText: `Yes`,
         denyButtonText: `No`,
         showClass: {
@@ -1557,7 +1721,7 @@ function leaveFeedback() {
         if (result.isConfirmed) {
             openURL(url.survey);
         } else {
-            openURL('/newroom');
+            openURL('https://deepbluework.com');
         }
     });
 }

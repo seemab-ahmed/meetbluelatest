@@ -219,93 +219,120 @@ function startServer() {
         }
     });
 
-    // main page
-    app.get(['/'], (req, res) => {
-        if (hostCfg.protected == true) {
-            hostCfg.authenticated = false;
-            res.sendFile(views.login);
-        } else {
-            res.sendFile(views.landing);
-        }
-    });
-
-    // handle login on host protected
-    app.get(['/login'], (req, res) => {
-        if (hostCfg.protected == true) {
-            let ip = getIP(req);
-            log.debug(`Request login to host from: ${ip}`, req.query);
-            const { username, password } = checkXSS(req.query);
-            if (username == hostCfg.username && password == hostCfg.password) {
-                hostCfg.authenticated = true;
-                authHost = new Host(ip, true);
-                log.debug('LOGIN OK', { ip: ip, authorized: authHost.isAuthorized(ip) });
-                res.sendFile(views.landing);
-            } else {
-                log.debug('LOGIN KO', { ip: ip, authorized: false });
-                hostCfg.authenticated = false;
-                res.sendFile(views.login);
-            }
-        } else {
-            res.redirect('/');
-        }
-    });
-
-    // set new room name and join
-    app.get(['/newroom'], (req, res) => {
-        if (hostCfg.protected == true) {
-            let ip = getIP(req);
-            if (allowedIP(ip)) {
-                res.sendFile(views.newRoom);
-            } else {
-                hostCfg.authenticated = false;
-                res.sendFile(views.login);
-            }
-        } else {
-            res.sendFile(views.newRoom);
-        }
-    });
-
-    // no room name specified to join || direct join
-    app.get('/join/', (req, res) => {
-        if (hostCfg.authenticated && Object.keys(req.query).length > 0) {
-            log.debug('Direct Join', req.query);
-            // http://localhost:3010/join?room=test&password=0&name=mirotalksfu&audio=1&video=1&screen=1&notify=1
-            const { room, password, name, audio, video, screen, notify } = checkXSS(req.query);
-            if (room && password && name && audio && video && screen && notify) {
+    app.post('/', (req, res) => {
+        if (hostCfg.authenticated && Object.keys(req.body).length > 0) {
+            log.debug('Direct Join', req.query, req.body);
+            const { room } = req.query;
+            res.cookie('data', JSON.stringify(req.body), /*{ maxAge: 900000, httpOnly: false }*/);
+            if (!!room) {
                 return res.sendFile(views.room);
             }
         }
-        res.redirect('/');
+        return res.redirect("https://deepbluework.com/")
     });
-
-    // join room by id
-    app.get('/join/:roomId', (req, res) => {
-        if (hostCfg.authenticated) {
-            res.sendFile(views.room);
-        } else {
-            res.redirect('/');
+    
+    app.get('/', (req, res) => {
+        if (hostCfg.authenticated && Object.keys(req.query).length > 0) {
+            log.debug('Direct Join', req.query, req.query);
+            const { room } = req.query;
+            res.cookie('data', JSON.stringify(req.body), /*{ maxAge: 900000, httpOnly: false }*/);
+            if (!!room) {
+                return res.sendFile(views.room);
+            }
         }
+        return res.redirect("https://deepbluework.com/")
     });
+    
+    //external api call to validate organizer by password
+    // app.post('/organizer', organizer);
 
-    // not specified correctly the room id
-    app.get('/join/*', (req, res) => {
-        res.redirect('/');
-    });
+    // // main page
+    // app.get(['/'], (req, res) => {
+    //     if (hostCfg.protected == true) {
+    //         hostCfg.authenticated = false;
+    //         res.sendFile(views.login);
+    //     } else {
+    //         res.sendFile(views.landing);
+    //     }
+    // });
 
-    // if not allow video/audio
-    app.get(['/permission'], (req, res) => {
-        res.sendFile(views.permission);
-    });
+    // // handle login on host protected
+    // app.get(['/login'], (req, res) => {
+    //     if (hostCfg.protected == true) {
+    //         let ip = getIP(req);
+    //         log.debug(`Request login to host from: ${ip}`, req.query);
+    //         const { username, password } = checkXSS(req.query);
+    //         if (username == hostCfg.username && password == hostCfg.password) {
+    //             hostCfg.authenticated = true;
+    //             authHost = new Host(ip, true);
+    //             log.debug('LOGIN OK', { ip: ip, authorized: authHost.isAuthorized(ip) });
+    //             res.sendFile(views.landing);
+    //         } else {
+    //             log.debug('LOGIN KO', { ip: ip, authorized: false });
+    //             hostCfg.authenticated = false;
+    //             res.sendFile(views.login);
+    //         }
+    //     } else {
+    //         res.redirect('/');
+    //     }
+    // });
 
-    // privacy policy
-    app.get(['/privacy'], (req, res) => {
-        res.sendFile(views.privacy);
-    });
+    // // set new room name and join
+    // app.get(['/newroom'], (req, res) => {
+    //     if (hostCfg.protected == true) {
+    //         let ip = getIP(req);
+    //         if (allowedIP(ip)) {
+    //             res.sendFile(views.newRoom);
+    //         } else {
+    //             hostCfg.authenticated = false;
+    //             res.sendFile(views.login);
+    //         }
+    //     } else {
+    //         res.sendFile(views.newRoom);
+    //     }
+    // });
 
-    // mirotalk about
-    app.get(['/about'], (req, res) => {
-        res.sendFile(views.about);
-    });
+    // // no room name specified to join || direct join
+    // app.get('/join/', (req, res) => {
+    //     if (hostCfg.authenticated && Object.keys(req.query).length > 0) {
+    //         log.debug('Direct Join', req.query);
+    //         // http://localhost:3010/join?room=test&password=0&name=mirotalksfu&audio=1&video=1&screen=1&notify=1
+    //         const { room, password, name, audio, video, screen, notify } = checkXSS(req.query);
+    //         if (room && password && name && audio && video && screen && notify) {
+    //             return res.sendFile(views.room);
+    //         }
+    //     }
+    //     res.redirect('/');
+    // });
+
+    // // join room by id
+    // app.get('/join/:roomId', (req, res) => {
+    //     if (hostCfg.authenticated) {
+    //         res.sendFile(views.room);
+    //     } else {
+    //         res.redirect('/');
+    //     }
+    // });
+
+    // // not specified correctly the room id
+    // app.get('/join/*', (req, res) => {
+    //     res.redirect('/');
+    // });
+
+    // // if not allow video/audio
+    // app.get(['/permission'], (req, res) => {
+    //     res.sendFile(views.permission);
+    // });
+
+    // // privacy policy
+    // app.get(['/privacy'], (req, res) => {
+    //     res.sendFile(views.privacy);
+    // });
+
+    // // mirotalk about
+    // app.get(['/about'], (req, res) => {
+    //     res.sendFile(views.about);
+    // });
 
     // ####################################################
     // API
@@ -365,36 +392,36 @@ function startServer() {
     // SLACK API
     // ####################################################
 
-    app.post('/slack', (req, res) => {
-        if (!slackEnabled) return res.end('`Under maintenance` - Please check back soon.');
+    // app.post('/slack', (req, res) => {
+    //     if (!slackEnabled) return res.end('`Under maintenance` - Please check back soon.');
 
-        log.debug('Slack', req.headers);
+    //     log.debug('Slack', req.headers);
 
-        if (!slackSigningSecret) return res.end('`Slack Signing Secret is empty!`');
+    //     if (!slackSigningSecret) return res.end('`Slack Signing Secret is empty!`');
 
-        let slackSignature = req.headers['x-slack-signature'];
-        let requestBody = qS.stringify(req.body, { format: 'RFC1738' });
-        let timeStamp = req.headers['x-slack-request-timestamp'];
-        let time = Math.floor(new Date().getTime() / 1000);
+    //     let slackSignature = req.headers['x-slack-signature'];
+    //     let requestBody = qS.stringify(req.body, { format: 'RFC1738' });
+    //     let timeStamp = req.headers['x-slack-request-timestamp'];
+    //     let time = Math.floor(new Date().getTime() / 1000);
 
-        if (Math.abs(time - timeStamp) > 300) return res.end('`Wrong timestamp` - Ignore this request.');
+    //     if (Math.abs(time - timeStamp) > 300) return res.end('`Wrong timestamp` - Ignore this request.');
 
-        let sigBaseString = 'v0:' + timeStamp + ':' + requestBody;
-        let mySignature = 'v0=' + CryptoJS.HmacSHA256(sigBaseString, slackSigningSecret);
+    //     let sigBaseString = 'v0:' + timeStamp + ':' + requestBody;
+    //     let mySignature = 'v0=' + CryptoJS.HmacSHA256(sigBaseString, slackSigningSecret);
 
-        if (mySignature == slackSignature) {
-            let host = req.headers.host;
-            let api = new ServerApi(host);
-            let meetingURL = api.getMeetingURL();
-            log.debug('Slack', { meeting: meetingURL });
-            return res.end(meetingURL);
-        }
-        return res.end('`Wrong signature` - Verification failed!');
-    });
+    //     if (mySignature == slackSignature) {
+    //         let host = req.headers.host;
+    //         let api = new ServerApi(host);
+    //         let meetingURL = api.getMeetingURL();
+    //         log.debug('Slack', { meeting: meetingURL });
+    //         return res.end(meetingURL);
+    //     }
+    //     return res.end('`Wrong signature` - Verification failed!');
+    // });
 
     // not match any of page before, so 404 not found
     app.get('*', function (req, res) {
-        res.sendFile(views.notFound);
+        res.redirect('https://deepbluework.com/');
     });
 
     // ####################################################
@@ -507,6 +534,28 @@ function startServer() {
         const worker = workers[nextMediasoupWorkerIdx];
         if (++nextMediasoupWorkerIdx === workers.length) nextMediasoupWorkerIdx = 0;
         return worker;
+    }
+
+    
+    function sendWaitingApprovals(socket) {
+        const allPeers = roomList
+        .get(socket.room_id)
+        .getPeers();
+        for (let peer of Array.from(allPeers.keys())) {
+            let peer_info = allPeers?.get(peer)?.peer_info;
+            if(peer_info.is_waiting){
+                sendWaitingApproval(socket, peer_info)
+            }
+        }
+    }
+       
+    function sendWaitingApproval(socket,peer_info) {
+        roomList.get(socket.room_id).broadCast(peer_info.peer_id, 'roomLobby', {
+            peer_id: peer_info.peer_id,
+            peer_name: peer_info.peer_name,
+            personal_color: peer_info?.personal_color,
+            lobby_status: 'waiting',
+        });
     }
 
     // ####################################################
@@ -634,6 +683,18 @@ function startServer() {
             } else {
                 roomList.get(socket.room_id).sendTo(data.peer_id, 'roomLobby', data);
             }
+        });
+        
+        socket.on('accepted', (dataObject) => {
+
+            const data = checkXSS(dataObject);
+            log.debug('accepted', data);
+            roomList.get(socket.room_id).broadCast2(data.peer_id, 'accepted', {
+                peer_id: data.peer_id,
+                peers_id: data.peers_id,
+                peer_name: data.peer_name,
+                lobby_status: data.lobby_status,
+            });
         });
 
         socket.on('peerAction', async (dataObject) => {
@@ -773,13 +834,66 @@ function startServer() {
                 return cb('isLocked');
             }
 
-            if (roomList.get(socket.room_id).isLobbyEnabled()) {
-                log.debug('User waiting to join room because lobby is enabled');
-                roomList.get(socket.room_id).broadCast(socket.id, 'roomLobby', {
-                    peer_id: data.peer_info.peer_id,
-                    peer_name: data.peer_info.peer_name,
-                    lobby_status: 'waiting',
-                });
+            
+
+            if(!!data.peer_pass_organizer){
+                const isOrganizer = true;
+                roomList.get(socket.room_id)?.getPeers()?.get(socket.id)?.updatePeerInfo({ type: 'security', dbw_name: data?.peer_name, user_name: data?.peer_name, is_organizer:  isOrganizer, is_waiting: false});
+                cb(roomList.get(socket.room_id).toJson());
+                isOrganizer && sendWaitingApprovals(socket);
+                return;
+            }
+
+            // if (roomList.get(socket.room_id).isLobbyEnabled()) {
+            //     log.debug('User waiting to join room because lobby is enabled');
+            //     roomList.get(socket.room_id).broadCast(socket.id, 'roomLobby', {
+            //         peer_id: data.peer_info.peer_id,
+            //         peer_name: data.peer_info.peer_name,
+            //         lobby_status: 'waiting',
+            //     });
+            //     return cb('isLobby');
+            // }
+
+            
+            if (!!data?.peer_info?.token) {
+                axios.get(`${process.env.APP_API_SERVICE_URL}/v1/user/calendar/meeting/${socket.room_id}`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'Authorization': `Bearer ${data?.peer_info?.token}`
+                        }
+                    }).then(({ data: meeting }) => {
+                        console.log({ meeting });
+                        if (!!meeting) {
+                                    const isOrganizer = !!meeting?.organizer;
+                                    roomList.get(socket.room_id)?.getPeers()?.get(socket.id)?.updatePeerInfo({ type: 'security', dbw_name: meeting.userFullName, user_name: meeting.userName, is_organizer:  isOrganizer, is_waiting: false});
+                                    cb(roomList.get(socket.room_id).toJson());
+                                    isOrganizer && sendWaitingApprovals(socket);
+                                    return;
+                                } else {
+                                log.debug('User waiting to join room because lobby is enabled');
+                                roomList.get(socket.room_id).broadCast(socket.id, 'roomLobby', {
+                                    peer_id: data.peer_info.peer_id,
+                                    peer_name: data.peer_info.peer_name,
+                                    personal_color: data?.peer_info?.personal_color,
+                                    lobby_status: 'waiting',
+                                });
+                                sendWaitingApproval(socket,data.peer_info);
+                                return cb('isLobby');
+                            }
+                        }
+                    ).catch((err) => {
+                        log.debug('User waiting to join room because lobby is enabled');
+                        roomList.get(socket.room_id).broadCast(socket.id, 'roomLobby', {
+                            peer_id: data.peer_info.peer_id,
+                            peer_name: data.peer_info.peer_name,
+                            personal_color: data?.peer_info?.personal_color,
+                            lobby_status: 'waiting',
+                        });
+                        sendWaitingApproval(socket,data.peer_info);
+                        return cb('isLobby');
+                    })
+            } else {
+                sendWaitingApproval(socket,data.peer_info);
                 return cb('isLobby');
             }
 

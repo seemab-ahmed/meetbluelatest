@@ -14,7 +14,7 @@ module.exports = class Room {
         this.audioLastUpdateTime = 0;
         this.io = io;
         this._isLocked = false;
-        this._isLobbyEnabled = false;
+        this._isLobbyEnabled = true;
         this._roomPassword = null;
         this.peers = new Map();
         this.createTheRouter();
@@ -292,6 +292,19 @@ module.exports = class Room {
         }
     }
 
+    broadCast2(socket_id, action, data) {
+        log.debug('boradcast 2', {
+            data: data,
+            action: action,
+            socketId: socket_id
+        })
+        !!data.peers_id && this.send2(socket_id, action, data);
+        for (let otherID of Array.from(this.peers.keys()).filter((id) => id !== socket_id)) {
+            this.send2(otherID, action, data);
+        }
+    }
+
+
     sendTo(socket_id, action, data) {
         for (let peer_id of Array.from(this.peers.keys()).filter((id) => id === socket_id)) {
             this.send(peer_id, action, data);
@@ -300,5 +313,19 @@ module.exports = class Room {
 
     send(socket_id, action, data) {
         this.io.to(socket_id).emit(action, data);
+    }
+    
+    send2(socket_id, action, data) {
+        const peer_info = this.peers.get(socket_id)?.peer_info;
+        
+        log.debug('send2',{
+            socket_id: socket_id,
+            action: action,
+            data: data,
+            peer_info
+        })
+            if (peer_info?.is_waiting === false || action === "roomLobbyUpdate") {
+                this.io.to(socket_id).emit(action, data);
+            }
     }
 };
