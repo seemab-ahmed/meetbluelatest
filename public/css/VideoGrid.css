@@ -8,14 +8,15 @@
     display: flex;
     top: 0;
     width: 100%;
-    height: 100%;
+    height: 92%;
     border-radius: 5px;
-    align-content: center;
+    /* align-content: center; */
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
     vertical-align: middle;
     overflow: hidden;
+    overflow-y: auto;
     /* border: 3px solid blue; */
 }
 
@@ -30,11 +31,15 @@
     border-radius: 5px;
     box-shadow: var(--box-shadow);
     overflow: hidden;
+    overflow-y: auto;
     /* animation: show 0.4s ease; */
     /* border: 3px solid lime; */
 }
 
 .Camera {
+    flex-grow: 1;
+    min-width: 250px;
+    min-height: 200px;
     position: relative;
     vertical-align: middle;
     align-self: center;
@@ -116,7 +121,7 @@
 }
 
 .videoMenuBar {
-    z-index: 2;
+    /* z-index: 2;
     position: absolute;
     display: inline;
     top: 0;
@@ -128,7 +133,45 @@
     text-align: center;
     width: 100%;
     cursor: default;
+    overflow: hidden; */
+    z-index: 2;
+    position: absolute;
+    display: flex !important;
+    display: -webkit-box !important;     
+    display: -moz-box !important;        
+    display: -ms-flexbox !important;      
+    display: -webkit-flex !important;
+    flex-direction: row-reverse;
+    flex-wrap: wrap;
+    top: 0;
+    left: 0;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+    width: 100%;
+    cursor: default;
     overflow: hidden;
+}
+
+@media screen and (max-width: 1000px) {
+    .videoMenuBar button[id*="__sendVideo"] {
+        display: none !important;
+    }
+    .videoMenuBar button[id*="__sendFile"] {
+        display: none !important;
+    }
+    .videoMenuBar input {
+        display: none !important;
+    }
+    .videoMenuBar button[id*="__video"] {
+        display: none !important;
+    }
+    .videoMenuBar button[id*="__snapshot"] {
+        display: none !important;
+    }
+    
 }
 
 .videoMenuBar input,

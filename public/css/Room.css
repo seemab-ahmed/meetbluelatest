@@ -32,7 +32,7 @@
 }
 
 :root {
-    --body-bg: radial-gradient(#393939, #000000);
+    --body-bg: radial-gradient(#202641, #181D35);
     --border: 1px solid rgb(255 255 255 / 32%);
     --border-radius: 1rem;
     --msger-top: 50%;
@@ -40,23 +40,23 @@
     --msger-height: 680px;
     --msger-width: 420px;
     --msger-bubble-width: 85%;
-    --msger-bg: radial-gradient(#393939, #000000);
+    --msger-bg: radial-gradient(#202641, #181D35);
     --wb-width: 800px;
     --wb-height: 600px;
-    --wb-bg: radial-gradient(#393939, #000000);
+    --wb-bg: radial-gradient(#202641, #181D35);
     --left-msg-bg: #252d31;
     --right-msg-bg: #056162;
     --private-msg-bg: #6b1226;
     --box-shadow: 0px 8px 16px 0px rgb(0 0 0);
     --btns-hover-scale: scale(1.1);
-    --settings-bg: radial-gradient(#393939, #000000);
+    --settings-bg: radial-gradient(#202641, #181D35);
     /* buttons bar horizontal */
-    --btns-top: 50%;
-    --btns-right: 0%;
-    --btns-left: 10px;
+    --btns-top: 95%;
+    --btns-right: 25%;
+    --btns-left: 50%;
     --btns-margin-left: 0px;
     --btns-width: 60px;
-    --btns-flex-direction: column;
+    --btns-flex-direction: row;
     /* buttons bar horizontal
     --btns-top: 95%;
     --btns-right: 25%;
@@ -82,7 +82,10 @@ body {
     height: 100%;
     overflow: hidden;
     /* background: var(--body-bg); */
-    background: url('../images/background.jpg');
+    background: url('../images/wavy-background.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 /*--------------------------------------------------------------
@@ -166,7 +169,12 @@ body {
 #control {
     z-index: 3;
     position: absolute;
-    display: flex;
+    display: flex !important;
+    display: -webkit-box !important;     
+    display: -moz-box !important;        
+    display: -ms-flexbox !important;      
+    display: -webkit-flex !important; 
+
     padding: 5px;
 
     top: var(--btns-top);
@@ -196,6 +204,26 @@ body {
     border: var(--border);
     /* box-shadow: var(--box-shadow); */
 }
+
+
+/* @media screen and (max-width: 1000px) {
+    #control {
+        justify-content: center;
+        grid-gap: 5px;
+    }
+    #control button {
+        box-sizing: border-box;
+        height: 32px;
+        width: 32px;
+        font-size: 13px;
+        padding-top: 7px;
+        padding-left: 8px;
+        border-radius: 8px;
+    }
+    #shareButton {
+        display: none !important;
+    }
+  } */
 
 #control p {
     font-size: small;
@@ -317,7 +345,7 @@ th {
 --------------------------------------------------------------*/
 .tab {
     overflow: hidden;
-    background-color: #000000;
+    background-color: #181D35;
 }
 
 /* Style the buttons inside the tab */

@@ -31,20 +31,8 @@ dependencies: {
 }
 */
 
-/**
- * MiroTalk SFU - Server component
- *
- * @link    GitHub: https://github.com/miroslavpejic85/mirotalksfu
- * @link    Official Live demo: https://sfu.mirotalk.com
- * @license For open source use: AGPLv3
- * @license For commercial or closed source, contact us at license.mirotalk@gmail.com or purchase directly via CodeCanyon
- * @license CodeCanyon: https://codecanyon.net/item/mirotalk-sfu-webrtc-realtime-video-conferences/40769970
- * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.0.5
- *
- */
-
 const express = require('express');
+const dotenv = require('dotenv');
 const cors = require('cors');
 const compression = require('compression');
 const https = require('httpolyglot');
@@ -53,6 +41,7 @@ const mediasoupClient = require('mediasoup-client');
 const http = require('http');
 const path = require('path');
 const axios = require('axios');
+const fetch = require('node-fetch');
 const ngrok = require('ngrok');
 const fs = require('fs');
 const config = require('./config');
@@ -78,6 +67,7 @@ const bodyParser = require('body-parser');
 const organizer = require('../api/organizer/organizer');
 
 const app = express();
+dotenv.config();
 
 const options = {
     cert: fs.readFileSync(path.join(__dirname, config.server.ssl.cert), 'utf-8'),
@@ -827,6 +817,36 @@ function startServer() {
 
             const data = checkXSS(dataObject);
 
+            log.debug('currentPeers', roomList.get(socket.room_id).getPeers().size);
+            const isAlone = roomList.get(socket.room_id)?.getPeers()?.size === 1;
+
+            log.debug('isAlone',isAlone);
+
+            if(isAlone){
+                const allPeers = roomList
+                .get(socket.room_id)
+                .getPeers();
+                for (let peer of Array.from(allPeers.keys())) {
+                    let peer_info = allPeers?.get(peer)?.peer_info;
+                    if(!peer_info.peer_presenter){
+                        log.debug('isAlone', peer_info.peer_name)
+                        presenters[socket.room_id][peer_info.peer_uuid] = {
+                            peer_ip: peer_info?.peer_ip,
+                            peer_name: peer_info?.peer_name,
+                            peer_uuid: peer_info?.peer_uuid,
+                            is_presenter: true,
+                        };
+                        roomList
+                        .get(socket.room_id)
+                        .getPeers()
+                        .get(peer_info?.peer_id)
+                        .updatePeerInfo({ type: 'presenter', status: true });
+                        roomList.get(socket.room_id)?.getPeers()?.get(peer_info?.peer_id)?.updatePeerInfo({ type: 'security', dbw_name: peer_info?.peer_name, user_name: peer_info?.peer_name, is_organizer:  true, is_waiting: false});
+                        
+                    }
+                }
+            }
+
             log.debug('User joined', data);
             roomList.get(socket.room_id).addPeer(new Peer(socket.id, data));
 
@@ -837,13 +857,13 @@ function startServer() {
 
             
 
-            if(!!data.peer_pass_organizer){
-                const isOrganizer = true;
-                roomList.get(socket.room_id)?.getPeers()?.get(socket.id)?.updatePeerInfo({ type: 'security', dbw_name: data?.peer_name, user_name: data?.peer_name, is_organizer:  isOrganizer, is_waiting: false});
-                cb(roomList.get(socket.room_id).toJson());
-                isOrganizer && sendWaitingApprovals(socket);
-                return;
-            }
+            // if(!!data.peer_pass_organizer){
+            //     const isOrganizer = true;
+            //     roomList.get(socket.room_id)?.getPeers()?.get(socket.id)?.updatePeerInfo({ type: 'security', dbw_name: data?.peer_name, user_name: data?.peer_name, is_organizer:  isOrganizer, is_waiting: false});
+            //     cb(roomList.get(socket.room_id).toJson());
+            //     isOrganizer && sendWaitingApprovals(socket);
+            //     return;
+            // }
 
             // if (roomList.get(socket.room_id).isLobbyEnabled()) {
             //     log.debug('User waiting to join room because lobby is enabled');
@@ -854,81 +874,121 @@ function startServer() {
             //     });
             //     return cb('isLobby');
             // }
-
+            log.debug(`https://gateway.prod.deepbluework.com/v1/user/calendar/meeting/${socket.room_id}`);
+            log.debug('NoOfPresenters', presenters);
             
-            if (!!data?.peer_info?.token) {
-                axios.get(`${process.env.APP_API_SERVICE_URL}/v1/user/calendar/meeting/${socket.room_id}`, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'Authorization': `Bearer ${data?.peer_info?.token}`
-                        }
-                    }).then(({ data: meeting }) => {
-                        console.log({ meeting });
-                        if (!!meeting) {
-                                    const isOrganizer = !!meeting?.organizer;
-                                    roomList.get(socket.room_id)?.getPeers()?.get(socket.id)?.updatePeerInfo({ type: 'security', dbw_name: meeting.userFullName, user_name: meeting.userName, is_organizer:  isOrganizer, is_waiting: false});
-                                    cb(roomList.get(socket.room_id).toJson());
-                                    isOrganizer && sendWaitingApprovals(socket);
-                                    return;
-                                } else {
-                                log.debug('User waiting to join room because lobby is enabled');
-                                roomList.get(socket.room_id).broadCast(socket.id, 'roomLobby', {
-                                    peer_id: data.peer_info.peer_id,
-                                    peer_name: data.peer_info.peer_name,
-                                    personal_color: data?.peer_info?.personal_color,
-                                    lobby_status: 'waiting',
-                                });
-                                sendWaitingApproval(socket,data.peer_info);
-                                return cb('isLobby');
-                            }
-                        }
-                    ).catch((err) => {
-                        log.debug('User waiting to join room because lobby is enabled');
-                        roomList.get(socket.room_id).broadCast(socket.id, 'roomLobby', {
-                            peer_id: data.peer_info.peer_id,
-                            peer_name: data.peer_info.peer_name,
-                            personal_color: data?.peer_info?.personal_color,
-                            lobby_status: 'waiting',
-                        });
-                        sendWaitingApproval(socket,data.peer_info);
-                        return cb('isLobby');
-                    })
-            } else {
-                sendWaitingApproval(socket,data.peer_info);
-                return cb('isLobby');
-            }
-
+            
             if (!(socket.room_id in presenters)) presenters[socket.room_id] = {};
 
             const peer_name = roomList.get(socket.room_id).getPeers()?.get(socket.id)?.peer_info?.peer_name;
             const peer_uuid = roomList.get(socket.room_id).getPeers()?.get(socket.id)?.peer_info?.peer_uuid;
 
-            if (Object.keys(presenters[socket.room_id]).length === 0) {
-                presenters[socket.room_id] = {
-                    peer_ip: peer_ip,
-                    peer_name: peer_name,
-                    peer_uuid: peer_uuid,
-                    is_presenter: true,
-                };
-            }
-
-            log.debug('[Join] - Connected presenters grp by roomId', presenters);
-
-            const isPresenter = await isPeerPresenter(socket.room_id, peer_name, peer_uuid);
-
-            roomList
-                .get(socket.room_id)
-                .getPeers()
-                .get(socket.id)
-                .updatePeerInfo({ type: 'presenter', status: isPresenter });
-
-            log.debug('[Join] - Is presenter', {
-                roomId: socket.room_id,
+        if(!!data.peer_pass_organizer){
+            const isOrganizer = true;
+            presenters[socket.room_id][peer_uuid] = {
+                peer_ip: peer_ip,
                 peer_name: peer_name,
-                peer_presenter: isPresenter,
-            });
-
+                peer_uuid: peer_uuid,
+                is_presenter: true,
+            };
+            roomList
+            .get(socket.room_id)
+            .getPeers()
+            .get(socket.id)
+            .updatePeerInfo({ type: 'presenter', status: true });
+            roomList.get(socket.room_id)?.getPeers()?.get(socket.id)?.updatePeerInfo({ type: 'security', dbw_name: data?.peer_info?.peer_name, user_name: data?.peer_info?.peer_name, is_organizer:  isOrganizer, is_waiting: false});
             cb(roomList.get(socket.room_id).toJson());
+            //isOrganizer && sendWaitingApprovals(socket);
+            return;
+        }
+
+        if (!!data?.peer_info?.token) {
+            log.debug('xyz')
+            axios.get(`https://gateway.dev-stag.deepbluework.com/v1/user/calendar/meeting/${socket.room_id}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${data?.peer_info?.token}`
+                    }
+                }).then(({ data: meeting }) => {
+                    console.log({ meeting });
+                    log.debug('xyz')
+                    if (!!meeting) {
+                                const isOrganizer = !!meeting?.organizer;
+                                presenters[socket.room_id][peer_uuid] = {
+                                    peer_ip: peer_ip,
+                                    peer_name: peer_name,
+                                    peer_uuid: peer_uuid,
+                                    is_presenter: true,
+                                };
+                                roomList
+                                .get(socket.room_id)
+                                .getPeers()
+                                .get(socket.id)
+                                .updatePeerInfo({ type: 'presenter', status: true });
+                                roomList.get(socket.room_id)?.getPeers()?.get(socket.id)?.updatePeerInfo({ type: 'security', dbw_name: meeting.userFullName, user_name: meeting.userName, is_organizer:  isOrganizer, is_waiting: false});
+                                cb(roomList.get(socket.room_id).toJson());
+                                isOrganizer && sendWaitingApprovals(socket);
+                                return;
+                            } else {
+                            log.debug('User waiting to join room because lobby is enabled');
+                            roomList.get(socket.room_id).broadCast(socket.id, 'roomLobby', {
+                                peer_id: data.peer_info.peer_id,
+                                peer_name: data.peer_info.peer_name,
+                                personal_color: data?.peer_info?.personal_color,
+                                lobby_status: 'waiting',
+                            });
+                            sendWaitingApproval(socket,data.peer_info);
+                            return cb('isLobby');
+                        }
+                    }
+                ).catch((err) => {
+                    log.debug('User waiting to join room because lobby is enabled catch');
+                    roomList.get(socket.room_id).broadCast(socket.id, 'roomLobby', {
+                        peer_id: data.peer_info.peer_id,
+                        peer_name: data.peer_info.peer_name,
+                        personal_color: data?.peer_info?.personal_color,
+                        lobby_status: 'waiting',
+                    });
+                    sendWaitingApproval(socket,data.peer_info);
+                    return cb('isLobby');
+                })
+        } else {
+            sendWaitingApproval(socket,data.peer_info);
+            return cb('isLobby');
+        }
+            
+
+            // if (!(socket.room_id in presenters)) presenters[socket.room_id] = {};
+
+            // const peer_name = roomList.get(socket.room_id).getPeers()?.get(socket.id)?.peer_info?.peer_name;
+            // const peer_uuid = roomList.get(socket.room_id).getPeers()?.get(socket.id)?.peer_info?.peer_uuid;
+
+            // if (Object.keys(presenters[socket.room_id]).length === 0) {
+                // presenters[socket.room_id] = {
+                //     peer_ip: peer_ip,
+                //     peer_name: peer_name,
+                //     peer_uuid: peer_uuid,
+                //     is_presenter: true,
+                // };
+            // }
+
+            // log.debug('[Join] - Connected presenters grp by roomId', presenters);
+
+            // const isPresenter = await isPeerPresenter(socket.room_id, peer_name, peer_uuid);
+
+            // roomList
+            //     .get(socket.room_id)
+            //     .getPeers()
+            //     .get(socket.id)
+            //     .updatePeerInfo({ type: 'presenter', status: isPresenter });
+
+            // log.debug('[Join] - Is presenter', {
+            //     roomId: socket.room_id,
+            //     peer_name: peer_name,
+            //     peer_presenter: isPresenter,
+            // });
+
+            // cb(roomList.get(socket.room_id).toJson());
         });
 
         socket.on('getRouterRtpCapabilities', (_, callback) => {
@@ -1239,12 +1299,13 @@ function startServer() {
 
     async function isPeerPresenter(room_id, peer_name, peer_uuid) {
         let isPresenter = false;
+        log.debug('peerPresenters',presenters);
         try {
             isPresenter =
                 typeof presenters === 'object' &&
-                Object.keys(presenters[room_id]).length > 1 &&
-                presenters[room_id]['peer_name'] === peer_name &&
-                presenters[room_id]['peer_uuid'] === peer_uuid;
+                Object.keys(presenters[room_id][peer_uuid]).length > 1 &&
+                presenters[room_id][peer_uuid]['peer_name'] === peer_name &&
+                presenters[room_id][peer_uuid]['peer_uuid'] === peer_uuid;
         } catch (err) {
             log.error('isPeerPresenter', err);
             return false;

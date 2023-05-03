@@ -2,19 +2,6 @@
 
 if (location.href.substr(0, 5) !== 'https') location.href = 'https' + location.href.substr(4, location.href.length - 4);
 
-/**
- * MiroTalk SFU - Room component
- *
- * @link    GitHub: https://github.com/miroslavpejic85/mirotalksfu
- * @link    Official Live demo: https://sfu.mirotalk.com
- * @license For open source use: AGPLv3
- * @license For commercial or closed source, contact us at license.mirotalk@gmail.com or purchase directly via CodeCanyon
- * @license CodeCanyon: https://codecanyon.net/item/mirotalk-sfu-webrtc-realtime-video-conferences/40769970
- * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.0.5
- *
- */
-
 // ####################################################
 // STATIC SETTINGS
 // ####################################################
@@ -60,7 +47,7 @@ const lS = new LocalStorage();
 // ####################################################
 
 let currentTheme = 'dark';
-let swalBackground = 'radial-gradient(#393939, #000000)'; //'rgba(0, 0, 0, 0.7)';
+let swalBackground = 'radial-gradient(#202641, #181D35)'; //'rgba(0, 0, 0, 0.7)';
 
 let rc = null;
 let producer = null;
@@ -71,6 +58,9 @@ let chatMessagesId = 0;
 let room_id = getRoomId();
 let room_password = getRoomPassword();
 let peer_name = getPeerName();
+//custom change
+let peer_pass_organizer = false;
+//end
 let peer_uuid = getPeerUUID();
 let isScreenAllowed = getScreen();
 let notify = getNotify();
@@ -617,11 +607,11 @@ function whoAreYou() {
 
             return (isOrganizer && password.trim() !== '') ? checkOrganizerByPassword(room_id, password)
             .then(data => {
-                if(data.allow){
+                // if(data.allow){
                     peer_pass_organizer = true;
                     return {peer_name}
-                }
-                else return Swal.showValidationMessage(`Password Doesn't Match`);
+                // }
+                // else return Swal.showValidationMessage(`Password Doesn't Match`);
             })
             .catch(error => {
                 return Swal.showValidationMessage(`${error}`);
@@ -681,7 +671,8 @@ function checkOrganizerByPassword(room_id, password) {
       if (response.ok && response.status === 200) {
         return response.json();
       } else if(response.status === 401) {
-        throw new Error('Password is invalid');
+        // throw new Error('Password is invalid');
+        return response.json();
       } else {
         throw new Error('Something wen"t wrong');
       }
@@ -882,6 +873,7 @@ function joinRoom(peer_name, room_id) {
             socket,
             room_id,
             peer_name,
+            peer_pass_organizer,
             peer_uuid,
             peer_info,
             isAudioAllowed,

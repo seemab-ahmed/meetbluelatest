@@ -1,18 +1,5 @@
 'use strict';
 
-/**
- * MiroTalk SFU - Client component
- *
- * @link    GitHub: https://github.com/miroslavpejic85/mirotalksfu
- * @link    Official Live demo: https://sfu.mirotalk.com
- * @license For open source use: AGPLv3
- * @license For commercial or closed source, contact us at license.mirotalk@gmail.com or purchase directly via CodeCanyon
- * @license CodeCanyon: https://codecanyon.net/item/mirotalk-sfu-webrtc-realtime-video-conferences/40769970
- * @author  Miroslav Pejic - miroslav.pejic.85@gmail.com
- * @version 1.0.5
- *
- */
-
 const cfg = {
     useAvatarSvg: true,
 };
@@ -116,6 +103,7 @@ class RoomClient {
         socket,
         room_id,
         peer_name,
+        peer_pass_organizer,
         peer_uuid,
         peer_info,
         isAudioAllowed,
@@ -134,6 +122,7 @@ class RoomClient {
         this.room_id = room_id;
         this.peer_id = socket.id;
         this.peer_name = peer_name;
+        this.peer_pass_organizer = peer_pass_organizer;
         this.peer_uuid = peer_uuid;
         this.peer_info = peer_info;
 
@@ -245,6 +234,7 @@ class RoomClient {
                 let data = {
                     room_id: this.room_id,
                     peer_info: this.peer_info,
+                    peer_pass_organizer: this.peer_pass_organizer,
                 };
                 await this.join(data);
                 this.initSockets();
@@ -312,6 +302,11 @@ class RoomClient {
 
     async handleRoomInfo(room) {
         let peers = new Map(JSON.parse(room.peers));
+        
+        const thisPeerId= Array.from(peers.keys()).find((id) => id === this.peer_id);
+        const thisPeer =peers?.get(thisPeerId)?.peer_info;
+        isPresenter = !!thisPeer.is_organizer;
+        handleRules(isPresenter);
         participantsCount = peers.size;
         for (let peer of Array.from(peers.keys()).filter((id) => id == this.peer_id)) {
             let my_peer_info = peers.get(peer).peer_info;
@@ -578,6 +573,12 @@ class RoomClient {
                 console.log('Room lobby:', data);
                 this.roomLobby(data);
             }.bind(this),
+        );
+
+        this.socket.on('accepted', function (data) {
+            console.log('Room Lobby Update:', data);
+            this.accepted(data);
+        }.bind(this),
         );
 
         this.socket.on(
@@ -3685,6 +3686,7 @@ class RoomClient {
             }
         });
     }
+    isPresenter
 
     getVideoType(url) {
         if (url.endsWith('.mp4')) return 'video/mp4';
@@ -3893,6 +3895,21 @@ class RoomClient {
             this.roomStatus(action);
         }
     }
+    
+    accepted(data){
+        console.log({Data: data});
+        if(data.peers_id?.length > 0){
+            this.lobbyRemoveAll();
+            return;
+        }
+        console.log('Data received from server: ', data);
+        const trElem = this.getId(data.peer_id);
+        trElem?.parentNode?.removeChild(trElem);
+        lobbyParticipantsCount--;
+        
+        lobbyHeaderTitle.innerText = 'Lobby users (' + lobbyParticipantsCount + ')';
+        if (lobbyParticipantsCount == 0) this.lobbyToggle();
+    }
 
     roomStatus(action) {
         switch (action) {
@@ -4027,17 +4044,22 @@ class RoomClient {
             broadcast: false,
         };
         this.socket.emit('roomLobby', data);
-        const trElem = this.getId(peer_id);
-        trElem.parentNode.removeChild(trElem);
-        lobbyParticipantsCount--;
-        lobbyHeaderTitle.innerText = 'Lobby users (' + lobbyParticipantsCount + ')';
-        if (lobbyParticipantsCount == 0) this.lobbyToggle();
+
+        //REMOVE PEER FROM ALL THE ORGANIZER
+        this.socket.emit('accepted', data);
+
+        // const trElem = this.getId(peer_id);
+        // trElem.parentNode.removeChild(trElem);
+        // lobbyParticipantsCount--;
+        // lobbyHeaderTitle.innerText = 'Lobby users (' + lobbyParticipantsCount + ')';
+        // if (lobbyParticipantsCount == 0) this.lobbyToggle();
     }
 
     lobbyAcceptAll() {
         if (lobbyParticipantsCount > 0) {
             const data = this.lobbyGetData('accept', this.lobbyGetPeerIds());
             this.socket.emit('roomLobby', data);
+            this.socket.emit('accepted', data);
             this.lobbyRemoveAll();
         } else {
             this.userLog('info', 'No participants in lobby detected', 'top-end');
@@ -4048,6 +4070,7 @@ class RoomClient {
         if (lobbyParticipantsCount > 0) {
             const data = this.lobbyGetData('reject', this.lobbyGetPeerIds());
             this.socket.emit('roomLobby', data);
+            this.socket.emit('accepted', data);
             this.lobbyRemoveAll();
         } else {
             this.userLog('info', 'No participants in lobby detected', 'top-end');
@@ -4198,8 +4221,8 @@ class RoomClient {
             showConfirmButton: false,
             background: swalBackground,
             imageUrl: image.poster,
-            title: 'Room has lobby enabled',
-            text: 'Asking to join meeting...',
+            title: 'Requesting to join the meeting',
+            text: 'Please wait...',
             confirmButtonText: `Ok`,
             denyButtonText: `Leave room`,
             showClass: {
