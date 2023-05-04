@@ -607,11 +607,11 @@ function whoAreYou() {
 
             return (isOrganizer && password.trim() !== '') ? checkOrganizerByPassword(room_id, password)
             .then(data => {
-                // if(data.allow){
+                if(data.allow){
                     peer_pass_organizer = true;
                     return {peer_name}
-                // }
-                // else return Swal.showValidationMessage(`Password Doesn't Match`);
+                }
+                else return Swal.showValidationMessage(`Password Doesn't Match`);
             })
             .catch(error => {
                 return Swal.showValidationMessage(`${error}`);
@@ -671,8 +671,7 @@ function checkOrganizerByPassword(room_id, password) {
       if (response.ok && response.status === 200) {
         return response.json();
       } else if(response.status === 401) {
-        // throw new Error('Password is invalid');
-        return response.json();
+        throw new Error('Password is invalid');
       } else {
         throw new Error('Something wen"t wrong');
       }
@@ -1680,11 +1679,34 @@ function handleRoomClientEvents() {
             console.log('Room Client save recording before to exit');
             rc.stopRecording();
         }
-        if (surveyActive) {
-            leaveFeedback();
-        } else {
-            openURL('https://deepbluework.com');
-        }
+        let qs = new URLSearchParams(window.location.search);
+        Swal.fire({
+            background: swalBackground,
+            position: 'center',
+            title: '<strong>Leaving Meeting?</strong>',
+            html: ``,
+            showDenyButton: false,
+            showCancelButton: true,
+            confirmButtonText: `Rejoin`,
+            cancelButtonText: `Leave`,
+            showClass: {
+                popup: 'animate__animated animate__fadeInUp',
+            },
+            hideClass: {
+                popup: 'animate__animated animate__fadeOutUp',
+            },
+        }).then((result) => {
+            if (result.isConfirmed) {
+                location.reload();
+            } else {
+                openURL('https://deepbluework.com/');
+            }
+        });
+        // if (surveyActive) {
+        //     leaveFeedback();
+        // } else {
+        //     openURL('https://deepbluework.com');
+        // }
     });
 }
 
@@ -2443,12 +2465,12 @@ function getParticipantAvatar(peerName) {
 function setTheme(theme) {
     switch (theme) {
         case 'dark':
-            swalBackground = 'radial-gradient(#393939, #000000)';
-            document.documentElement.style.setProperty('--body-bg', 'radial-gradient(#393939, #000000)');
-            document.documentElement.style.setProperty('--msger-bg', 'radial-gradient(#393939, #000000)');
-            document.documentElement.style.setProperty('--settings-bg', 'radial-gradient(#393939, #000000)');
-            document.documentElement.style.setProperty('--wb-bg', 'radial-gradient(#393939, #000000)');
-            document.body.style.background = 'radial-gradient(#393939, #000000)';
+            swalBackground = 'radial-gradient(#202641, #181D35)';
+            document.documentElement.style.setProperty('--body-bg', 'radial-gradient(#202641, #181D35)');
+            document.documentElement.style.setProperty('--msger-bg', 'radial-gradient(#202641, #181D35)');
+            document.documentElement.style.setProperty('--settings-bg', 'radial-gradient(#202641, #181D35)');
+            document.documentElement.style.setProperty('--wb-bg', 'radial-gradient(#202641, #181D35)');
+            document.body.style.background = 'radial-gradient(#202641, #181D35)';
             break;
         case 'grey':
             swalBackground = 'radial-gradient(#666, #333)';

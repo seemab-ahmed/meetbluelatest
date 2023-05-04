@@ -17,10 +17,10 @@ const BUTTONS = {
         startScreenButton: true,
         swapCameraButton: true,
         chatButton: true,
-        participantsButton: true,
+        participantsButton: false,
         whiteboardButton: true,
         settingsButton: true,
-        aboutButton: true, // Please keep me always visible, thank you!
+        aboutButton: false, // Please keep me always visible, thank you!
         exitButton: true,
     },
     settings: {
