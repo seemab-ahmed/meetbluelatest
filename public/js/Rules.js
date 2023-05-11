@@ -10,8 +10,8 @@ const isRulesActive = true;
 
 const BUTTONS = {
     main: {
-        shareButton: true,
-        hideMeButton: true,
+        shareButton: false,
+        hideMeButton: false,
         startAudioButton: true,
         startVideoButton: true,
         startScreenButton: true,
@@ -24,8 +24,8 @@ const BUTTONS = {
         exitButton: true,
     },
     settings: {
-        lockRoomButton: true,
-        unlockRoomButton: true,
+        // lockRoomButton: true,
+        // unlockRoomButton: true,
         lobbyButton: true,
         tabRecording: true,
     },
