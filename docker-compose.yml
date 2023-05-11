@@ -1,8 +1,8 @@
 version: '3'
 
 services:
-    mirotalksfu:
-        image: tsoft410/meetblue:latest
+    meetbluesfu:
+        image: meetblue:latest
         build:
             context: .
             dockerfile: Dockerfile
