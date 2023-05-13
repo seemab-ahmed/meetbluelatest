@@ -67,7 +67,9 @@ const bodyParser = require('body-parser');
 const organizer = require('../api/organizer/organizer');
 
 const app = express();
-dotenv.config();
+dotenv.config({
+    path: path.resolve(__dirname, '../.env.local')
+  });
 
 const options = {
     cert: fs.readFileSync(path.join(__dirname, config.server.ssl.cert), 'utf-8'),
@@ -874,7 +876,7 @@ function startServer() {
             //     });
             //     return cb('isLobby');
             // }
-            log.debug(`https://gateway.prod.deepbluework.com/v1/user/calendar/meeting/${socket.room_id}`);
+            // log.debug(`https://gateway.prod.deepbluework.com/v1/user/calendar/meeting/${socket.room_id}`);
             log.debug('NoOfPresenters', presenters);
             
             
@@ -904,7 +906,7 @@ function startServer() {
 
         if (!!data?.peer_info?.token) {
             log.debug('xyz')
-            axios.get(`https://gateway.dev-stag.deepbluework.com/v1/user/calendar/meeting/${socket.room_id}`, {
+            axios.get(`${process.env.APP_API_SERVICE_URL}/v1/user/calendar/meeting/${socket.room_id}`, {
                     headers: {
                         'Accept': 'application/json',
                         'Authorization': `Bearer ${data?.peer_info?.token}`

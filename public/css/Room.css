@@ -747,9 +747,14 @@ select {
     line-height: 40px;
 }
 
+.hiddenF{
+    display: none !important;   
+}
+
 .hidden {
     display: none;
 }
+
 
 .show {
     display: block;

@@ -2,22 +2,31 @@
 
 const Logger = require('../../src/Logger');
 const log = new Logger('Server');
+const dotenv = require('dotenv');
+const path = require('path');
+dotenv.config({
+    path: path.resolve(__dirname, '../../.env.local')
+  });
 
 const fetch = require('node-fetch');
 
 // const API_ENDPOINT = `${process.env.APP_API_SERVICE_URL}/v1/user/calendar/meeting/chkpassword/rjo-igk-63/?password=596140`;
-const API_ENDPOINT = `https://gateway.prod.deepbluework.com/v1/user/calendar/meeting/chkpassword`;
+const API_ENDPOINT = `${process.env.APP_API_SERVICE_URL}/v1/user/calendar/meeting/chkpassword`;
 
 function organizer(req, res) {
   const { room, password } = req.body;
-log.debug('APIENDPOINT',API_ENDPOINT)
+log.debug('APIENDPOINT',{password, API_ENDPOINT})
   fetch(`${API_ENDPOINT}/${room}?password=${password}`,{
     headers: {
       'Content-Type': 'application/json'
     }
   })
-    .then(response =>response)
+    .then(response =>{
+      // log.debug(response.text())
+      return response.text();
+    })
     .then(data => {
+      log.debug(data)
       if (data.ok) {
         res.status(200).json({ allow: true });
       } else {
