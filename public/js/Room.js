@@ -6,7 +6,7 @@ if (location.href.substr(0, 5) !== 'https') location.href = 'https' + location.h
 // STATIC SETTINGS
 // ####################################################
 
-const RoomURL = window.location.href;
+const RoomURL = (window.location.href).replace(/[?&]name=[^&]+|&name=[^&]+/g, '').replace(/[?&]token=[^&]+|&token=[^&]+/g, '');
 
 const socket = io({ transports: ['websocket'] });
 
