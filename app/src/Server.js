@@ -214,7 +214,7 @@ function startServer() {
 
     app.post('/', (req, res) => {
         if (hostCfg.authenticated && Object.keys(req.body).length > 0) {
-            log.debug('Direct Join', req.query, req.body);
+            log.debug('Direct Join Post', req.query, req.body);
             const { room } = req.query;
             res.cookie('data', JSON.stringify(req.body), /*{ maxAge: 900000, httpOnly: false }*/);
             if (!!room) {
@@ -226,9 +226,14 @@ function startServer() {
     
     app.get('/', (req, res) => {
         if (hostCfg.authenticated && Object.keys(req.query).length > 0) {
-            log.debug('Direct Join', req.query, req.query);
-            const { room } = req.query;
-            res.cookie('data', JSON.stringify(req.body), /*{ maxAge: 900000, httpOnly: false }*/);
+            log.debug('Direct Join Get', req.query, req.query);
+            const { name, room, token } = req.query;
+            log.debug('data',{
+                name,
+                room,
+                token
+            })
+            res.cookie('data', JSON.stringify(req.query), /*{ maxAge: 900000, httpOnly: false }*/);
             if (!!room) {
                 return res.sendFile(views.room);
             }
