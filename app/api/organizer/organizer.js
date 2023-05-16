@@ -15,14 +15,18 @@ const API_ENDPOINT = `${process.env.APP_API_SERVICE_URL}/v1/user/calendar/meetin
 
 function organizer(req, res) {
   const { room, password } = req.body;
-log.debug('APIENDPOINT',API_ENDPOINT)
+log.debug('APIENDPOINT',{password, API_ENDPOINT})
   fetch(`${API_ENDPOINT}/${room}?password=${password}`,{
     headers: {
       'Content-Type': 'application/json'
     }
   })
-    .then(response =>response)
+    .then(response =>{
+      // log.debug(response.text())
+      return response.text();
+    })
     .then(data => {
+      log.debug(data)
       if (data.ok) {
         res.status(200).json({ allow: true });
       } else {

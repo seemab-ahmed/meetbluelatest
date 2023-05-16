@@ -69,6 +69,7 @@ const organizer = require('../api/organizer/organizer');
 const app = express();
 dotenv.config({path: path.resolve(__dirname, '../.env.local')});
 
+
 const options = {
     cert: fs.readFileSync(path.join(__dirname, config.server.ssl.cert), 'utf-8'),
     key: fs.readFileSync(path.join(__dirname, config.server.ssl.key), 'utf-8'),
@@ -212,7 +213,7 @@ function startServer() {
 
     app.post('/', (req, res) => {
         if (hostCfg.authenticated && Object.keys(req.body).length > 0) {
-            log.debug('Direct Join', req.query, req.body);
+            log.debug('Direct Join Post', req.query, req.body);
             const { room } = req.query;
             res.cookie('data', JSON.stringify(req.body), /*{ maxAge: 900000, httpOnly: false }*/);
             if (!!room) {
@@ -224,15 +225,19 @@ function startServer() {
     
     app.get('/', (req, res) => {
         if (hostCfg.authenticated && Object.keys(req.query).length > 0) {
+
             log.debug('Direct Join', req.query, req.query);
+
             const { name, room, token } = req.query;
             log.debug('data',{
                 name,
                 room,
                 token
             })
+
             res.clearCookie('data');
             res.cookie('data', JSON.stringify({name, room, token}), /*{ maxAge: 900000, httpOnly: false }*/);
+
             if (!!room) {
                 return res.sendFile(views.room);
             }
@@ -880,7 +885,9 @@ function startServer() {
             //     });
             //     return cb('isLobby');
             // }
-            log.debug('NoOfPresenters', presenters);
+
+            // log.debug(`https://gateway.prod.deepbluework.com/v1/user/calendar/meeting/${socket.room_id}`);
+
             
             
             if (!(socket.room_id in presenters)) presenters[socket.room_id] = {};

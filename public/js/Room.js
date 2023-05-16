@@ -78,6 +78,10 @@ let isLobbyEnabled = false;
 let isLobbyOpen = false;
 let isEnumerateAudioDevices = false;
 let isEnumerateVideoDevices = false;
+
+//custom
+let isDefaultVideoOn = false;
+//end
 let isAudioAllowed = false;
 let isVideoAllowed = false;
 let isVideoPrivacyActive = false;
@@ -508,7 +512,6 @@ function getPeerInfo() {
 function whoAreYou() {
     console.log('04 ----> Who are you');
     sound('open');
-
     hide(loadingDiv);
     document.body.style.background = 'var(--body-bg)';
 
@@ -521,6 +524,8 @@ function whoAreYou() {
         joinRoom(peer_name, room_id);
         return;
     }
+
+    defaultCameraSetting();
 
     let default_name = window.localStorage.peer_name ? window.localStorage.peer_name : '';
     if (getCookie(room_id + '_name')) {
@@ -681,6 +686,14 @@ function checkOrganizerByPassword(room_id, password) {
     });
   }
 
+  function defaultCameraSetting() {
+    const initVideoBtn = document.getElementById('initVideoButton');
+    initVideoBtn.classList.add('fas', 'fa-video-slash');
+    setColor(initVideoBtn, isDefaultVideoOn ? 'white' : 'red');
+    // isVideoAllowed = false;
+    hide(initVideo);
+  }
+
 //end
 
 function handleAudio(e) {
@@ -692,15 +705,17 @@ function handleAudio(e) {
 }
 
 function handleVideo(e) {
+    isDefaultVideoOn = isDefaultVideoOn ? false : true;
     isVideoAllowed = isVideoAllowed ? false : true;
-    e.target.className = 'fas fa-video' + (isVideoAllowed ? '' : '-slash');
-    setColor(e.target, isVideoAllowed ? 'white' : 'red');
-    setColor(startVideoButton, isVideoAllowed ? 'white' : 'red');
-    checkInitVideo(isVideoAllowed);
+    e.target.className = 'fas fa-video' + (isDefaultVideoOn ? '' : '-slash');
+    setColor(e.target, isDefaultVideoOn ? 'white' : 'red');
+    setColor(startVideoButton, isDefaultVideoOn ? 'white' : 'red');
+    checkInitVideo(isDefaultVideoOn);
 }
 
 function handleAudioVideo(e) {
     isAudioVideoAllowed = isAudioVideoAllowed ? false : true;
+    isDefaultVideoOn = isAudioVideoAllowed ? true : false;
     isAudioAllowed = isAudioVideoAllowed;
     isVideoAllowed = isAudioVideoAllowed;
     initAudioButton.className = 'fas fa-microphone' + (isAudioVideoAllowed ? '' : '-slash');
@@ -715,7 +730,7 @@ function handleAudioVideo(e) {
     setColor(initVideoButton, isVideoAllowed ? 'white' : 'red');
     setColor(startAudioButton, isAudioAllowed ? 'white' : 'red');
     setColor(startVideoButton, isVideoAllowed ? 'white' : 'red');
-    checkInitVideo(isVideoAllowed);
+    checkInitVideo(isDefaultVideoOn);
     checkInitAudio(isAudioAllowed);
 }
 
@@ -873,7 +888,7 @@ function joinRoom(peer_name, room_id) {
             peer_uuid,
             peer_info,
             isAudioAllowed,
-            isVideoAllowed,
+            isVideoAllowed = isDefaultVideoOn,
             isScreenAllowed,
             joinRoomWithScreen,
             roomIsReady,
@@ -1285,7 +1300,7 @@ function setButtonsInit() {
     initAudioVideoButton = document.getElementById('initAudioVideoButton');
     if (!isAudioAllowed) hide(initAudioButton);
     if (!isVideoAllowed) hide(initVideoButton);
-    if (!isAudioAllowed || !isVideoAllowed) hide(initAudioVideoButton);
+    if (!isAudioAllowed && !isVideoAllowed) hide(initAudioVideoButton);
     isAudioVideoAllowed = isAudioAllowed && isVideoAllowed;
 }
 
@@ -1372,13 +1387,13 @@ async function changeCamera(deviceId) {
     navigator.mediaDevices
         .getUserMedia(videoConstraints)
         .then((camStream) => {
-            initVideo.className = 'mirror';
-            initVideo.srcObject = camStream;
-            initStream = camStream;
-            console.log(
-                '04.5 ----> Success attached init cam video stream',
-                initStream.getVideoTracks()[0].getSettings(),
-            );
+                initVideo.className = isDefaultVideoOn ? 'mirror' : 'hidden';
+                initVideo.srcObject = camStream;
+                initStream = camStream;
+                console.log(
+                    '04.5 ----> Success attached init cam video stream',
+                    initStream.getVideoTracks()[0].getSettings(),
+                );
         })
         .catch((err) => {
             console.error('[Error] changeCamera', err);
