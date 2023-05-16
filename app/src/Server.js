@@ -67,7 +67,7 @@ const bodyParser = require('body-parser');
 const organizer = require('../api/organizer/organizer');
 
 const app = express();
-dotenv.config();
+dotenv.config({path: path.resolve(__dirname, '../.env.local')});
 
 const options = {
     cert: fs.readFileSync(path.join(__dirname, config.server.ssl.cert), 'utf-8'),
@@ -225,8 +225,14 @@ function startServer() {
     app.get('/', (req, res) => {
         if (hostCfg.authenticated && Object.keys(req.query).length > 0) {
             log.debug('Direct Join', req.query, req.query);
-            const { room } = req.query;
-            res.cookie('data', JSON.stringify(req.body), /*{ maxAge: 900000, httpOnly: false }*/);
+            const { name, room, token } = req.query;
+            log.debug('data',{
+                name,
+                room,
+                token
+            })
+            res.clearCookie('data');
+            res.cookie('data', JSON.stringify({name, room, token}), /*{ maxAge: 900000, httpOnly: false }*/);
             if (!!room) {
                 return res.sendFile(views.room);
             }
@@ -874,7 +880,6 @@ function startServer() {
             //     });
             //     return cb('isLobby');
             // }
-            log.debug(`https://gateway.prod.deepbluework.com/v1/user/calendar/meeting/${socket.room_id}`);
             log.debug('NoOfPresenters', presenters);
             
             
@@ -901,10 +906,11 @@ function startServer() {
             //isOrganizer && sendWaitingApprovals(socket);
             return;
         }
+        log.debug('env',process.env.APP_API_SERVICE_URL);
 
         if (!!data?.peer_info?.token) {
             log.debug('xyz')
-            axios.get(`https://gateway.dev-stag.deepbluework.com/v1/user/calendar/meeting/${socket.room_id}`, {
+            axios.get(`${process.env.APP_API_SERVICE_URL}/v1/user/calendar/meeting/${socket.room_id}`, {
                     headers: {
                         'Accept': 'application/json',
                         'Authorization': `Bearer ${data?.peer_info?.token}`

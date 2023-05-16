@@ -2,11 +2,16 @@
 
 const Logger = require('../../src/Logger');
 const log = new Logger('Server');
+const dotenv = require('dotenv');
+const path = require('path');
+dotenv.config({
+    path: path.resolve(__dirname, '../../.env.local')
+  });
 
 const fetch = require('node-fetch');
 
 // const API_ENDPOINT = `${process.env.APP_API_SERVICE_URL}/v1/user/calendar/meeting/chkpassword/rjo-igk-63/?password=596140`;
-const API_ENDPOINT = `https://gateway.prod.deepbluework.com/v1/user/calendar/meeting/chkpassword`;
+const API_ENDPOINT = `${process.env.APP_API_SERVICE_URL}/v1/user/calendar/meeting/chkpassword`;
 
 function organizer(req, res) {
   const { room, password } = req.body;
