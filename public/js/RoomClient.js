@@ -1900,7 +1900,7 @@ class RoomClient {
         }
         this.handleDD(d.id, peer_id, !remotePeer);
         this.popupPeerInfo(p.id, peer_info);
-        this.setVideoAvatarImgName(i.id, peer_name);
+        this.setVideoAvatarImgName(i.id, peer_name, peer_info?.personal_color);
         this.getId(i.id).style.display = 'block';
         handleAspectRatio();
         if (isParticipantsListOpen) getRoomParticipants(true);
@@ -2063,22 +2063,25 @@ class RoomClient {
         });
     }
 
-    setVideoAvatarImgName(elemId, peer_name) {
+    setVideoAvatarImgName(elemId, peer_name, personal_color) {
         let elem = this.getId(elemId);
         if (cfg.useAvatarSvg) {
-            elem.setAttribute('src', this.genAvatarSvg(peer_name, 250));
+            elem.setAttribute('src', this.genAvatarSvg(peer_name, 250, personal_color));
         } else {
             elem.setAttribute('src', image.avatar);
         }
     }
 
-    genAvatarSvg(peerName, avatarImgSize) {
+    genAvatarSvg(peerName, avatarImgSize, personal_color) {
         const charCodeRed = peerName.charCodeAt(0);
         const charCodeGreen = peerName.charCodeAt(1) || charCodeRed;
         const red = Math.pow(charCodeRed, 7) % 200;
         const green = Math.pow(charCodeGreen, 7) % 200;
         const blue = (red + green) % 200;
-        const bgColor = `rgb(${red}, ${green}, ${blue})`;
+        let rgbColor = `rgb(${parseInt(personal_color.slice(0, 2), 16)}, ${parseInt(personal_color.slice(2, 4), 16)}, ${parseInt(personal_color.slice(4, 6), 16)})`;
+
+        // const bgColor = `rgb(${red}, ${green}, ${blue})`;
+        const bgColor = rgbColor;
         const textColor = '#ffffff';
         const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" 
@@ -2765,14 +2768,15 @@ class RoomClient {
         } else {
             let data = {
                 peer_name: this.peer_name,
-                peer_id: this.peer_id,
+                peer_id: this.peer_id,            
+                personal_color: this.peer_info?.personal_color,
                 to_peer_id: 'all',
                 peer_msg: peer_msg,
             };
             console.log('Send message:', data);
             this.socket.emit('message', data);
         }
-        this.setMsgAvatar('right', this.peer_name);
+        this.setMsgAvatar('right', this.peer_name, data.personal_color);
         this.appendMessage('right', this.rightMsgAvatar, this.peer_name, this.peer_id, peer_msg, 'all', 'all');
         this.cleanMessage();
     }
@@ -2809,13 +2813,14 @@ class RoomClient {
                 let data = {
                     peer_name: this.peer_name,
                     peer_id: this.peer_id,
+                    personal_color: this.peer_info?.personal_color,
                     to_peer_id: to_peer_id,
                     to_peer_name: toPeerName,
                     peer_msg: peer_msg,
                 };
                 console.log('Send message:', data);
                 this.socket.emit('message', data);
-                this.setMsgAvatar('right', this.peer_name);
+                this.setMsgAvatar('right', this.peer_name, data.personal_color);
                 this.appendMessage(
                     'right',
                     this.rightMsgAvatar,
@@ -2832,7 +2837,7 @@ class RoomClient {
 
     showMessage(data) {
         if (!this.isChatOpen && this.showChatOnMessage) this.toggleChat();
-        this.setMsgAvatar('left', data.peer_name);
+        this.setMsgAvatar('left', data.peer_name, data?.personal_color);
         this.appendMessage(
             'left',
             this.leftMsgAvatar,
@@ -2848,8 +2853,8 @@ class RoomClient {
         this.sound('message');
     }
 
-    setMsgAvatar(avatar, peerName) {
-        let avatarImg = this.genAvatarSvg(peerName, 32);
+    setMsgAvatar(avatar, peerName, personal_color) {
+        let avatarImg = this.genAvatarSvg(peerName, 32, personal_color);
         avatar === 'left' ? (this.leftMsgAvatar = avatarImg) : (this.rightMsgAvatar = avatarImg);
     }
 
@@ -3973,7 +3978,7 @@ class RoomClient {
                     let lobbyTr = '';
                     let peer_id = data.peer_id;
                     let peer_name = data.peer_name;
-                    let avatarImg = this.genAvatarSvg(peer_name, 32);
+                    let avatarImg = this.genAvatarSvg(peer_name, 32, data?.personal_color);
                     let lobbyTb = this.getId('lobbyTb');
                     let lobbyAccept = _PEER.acceptPeer;
                     let lobbyReject = _PEER.ejectPeer;

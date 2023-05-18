@@ -70,6 +70,7 @@ let token = getToken();
 //end
 
 let peer_info = null;
+let personal_color = Math.floor(Math.random() * 16777215).toString(16);
 
 let isHideMeActive = false;
 let isPitchBarEnabled = true;
@@ -477,6 +478,7 @@ function getPeerInfo() {
         peer_uuid: peer_uuid,
         peer_id: socket.id,
         token: token,
+        personal_color: personal_color,
         peer_name: peer_name,
         is_waiting: true,
         peer_presenter: isPresenter,
@@ -1921,7 +1923,7 @@ function setupWhiteboard() {
 
 function setupWhiteboardCanvas() {
     wbCanvas = new fabric.Canvas('wbCanvas');
-    wbCanvas.freeDrawingBrush.color = '#FFFFFF';
+    wbCanvas.freeDrawingBrush.color = '#'+personal_color;
     wbCanvas.freeDrawingBrush.width = 3;
     whiteboardIsDrawingMode(true);
 }
@@ -2376,7 +2378,7 @@ async function getParticipantsTable(peers) {
         let peer_sendFile = _PEER.sendFile;
         let peer_sendMsg = _PEER.sendMsg;
         let peer_id = peer_info.peer_id;
-        let avatarImg = getParticipantAvatar(peer_name);
+        let avatarImg = getParticipantAvatar(peer_name, peer_info.personal_color);
         if (rc.peer_id === peer_id) {
             table += `
             <tr id='${peer_name}'>
@@ -2455,8 +2457,8 @@ function refreshParticipantsCount(count, adapt = true) {
     if (adapt) adaptAspectRatio(count);
 }
 
-function getParticipantAvatar(peerName) {
-    return rc.genAvatarSvg(peerName, 32);
+function getParticipantAvatar(peerName, personal_color) {
+    return rc.genAvatarSvg(peerName, 32, personal_color);
 }
 
 // ####################################################
