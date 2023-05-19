@@ -2,7 +2,7 @@ version: '3'
 
 services:
     meetbluesfu:
-        image: tsoft410/meetblue:latest
+        image: seemabahmed/meetblue:latest
         build:
             context: .
             dockerfile: Dockerfile
