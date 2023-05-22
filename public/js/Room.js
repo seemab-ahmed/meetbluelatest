@@ -81,6 +81,7 @@ let isEnumerateAudioDevices = false;
 let isEnumerateVideoDevices = false;
 let isAudioAllowed = false;
 let isVideoAllowed = false;
+let isDefaultVideoOn = false;
 let isVideoPrivacyActive = false;
 let isAudioVideoAllowed = false;
 let isParticipantsListOpen = false;
@@ -483,7 +484,7 @@ function getPeerInfo() {
         is_waiting: true,
         peer_presenter: isPresenter,
         peer_audio: isAudioAllowed,
-        peer_video: isVideoAllowed,
+        peer_video: isDefaultVideoOn ? isVideoAllowed : isDefaultVideoOn,
         peer_screen: isScreenAllowed,
         peer_video_privacy: isVideoPrivacyActive,
         peer_hand: false,
@@ -508,6 +509,7 @@ function getPeerInfo() {
 //custom change 
 
 function whoAreYou() {
+    debugger;
     console.log('04 ----> Who are you');
     sound('open');
 
@@ -518,6 +520,7 @@ function whoAreYou() {
     let isOrganizer = !!(qs.get('organizer'));
 
     if (peer_name) {
+        isVideoAllowed = false;
         checkMedia();
         getPeerInfo();
         joinRoom(peer_name, room_id);
@@ -531,6 +534,7 @@ function whoAreYou() {
 
     const initUser = document.getElementById('initUser');
     initUser.classList.toggle('hidden');
+
 
     const inputFields = [
         {
@@ -584,6 +588,7 @@ function whoAreYou() {
         html: wrapper, // Inject HTML
         confirmButtonText: `Join meeting`,
         preConfirm: () => {
+              
             let username = document.getElementById('swal-input1').value;
             let password = isOrganizer ? document.getElementById('swal-input2').value : '';
 
@@ -635,16 +640,6 @@ function whoAreYou() {
             style.innerHTML = customCss;
             document.head.appendChild(style);
         },
-        // inputValidator: (name) => {
-        //     if (!name) return 'Please enter your name';
-        //     name = filterXSS(name);
-        //     if (isHtml(name)) return 'Invalid name!';
-        //     if (!getCookie(room_id + '_name')) {
-        //         window.localStorage.peer_name = name;
-        //     }
-        //     setCookie(room_id + '_name', name, 30);
-        //     peer_name = name;
-        // },
     }).then((result) => {
         if (initStream && !joinRoomWithScreen) {
             stopTracks(initStream);
@@ -694,9 +689,17 @@ function handleAudio(e) {
 }
 
 function handleVideo(e) {
+    isDefaultVideoOn = true;
     isVideoAllowed = isVideoAllowed ? false : true;
     e.target.className = 'fas fa-video' + (isVideoAllowed ? '' : '-slash');
     setColor(e.target, isVideoAllowed ? 'white' : 'red');
+    setColor(startVideoButton, isVideoAllowed ? 'white' : 'red');
+    checkInitVideo(isVideoAllowed);
+}
+function handleVideoD() {
+    isVideoAllowed = isVideoAllowed ? false : true;
+    // e.target.className = 'fas fa-video' + (isVideoAllowed ? '' : '-slash');
+    // setColor(e.target, isVideoAllowed ? 'white' : 'red');
     setColor(startVideoButton, isVideoAllowed ? 'white' : 'red');
     checkInitVideo(isVideoAllowed);
 }
@@ -726,7 +729,9 @@ function checkInitVideo(isVideoAllowed) {
         if (initVideoSelect.value) changeCamera(initVideoSelect.value);
         sound('joined');
     } else {
+        console.log('else');
         if (initStream) {
+            console.log('initstream')
             stopTracks(initStream);
             hide(initVideo);
             sound('left');
@@ -875,7 +880,7 @@ function joinRoom(peer_name, room_id) {
             peer_uuid,
             peer_info,
             isAudioAllowed,
-            isVideoAllowed,
+            isVideoAllowed = isDefaultVideoOn ? isVideoAllowed : isDefaultVideoOn,
             isScreenAllowed,
             joinRoomWithScreen,
             roomIsReady,
@@ -1150,18 +1155,18 @@ function handleButtons() {
         rc.updatePeerInfo(peer_name, rc.peer_id, 'hand', false);
     };
     startAudioButton.onclick = () => {
-        hide(startAudioButton);
-        show(stopAudioButton);
-        // setAudioButtonsDisabled(true);
+        // hide(startAudioButton);
+        // show(stopAudioButton);
+        setAudioButtonsDisabled(true);
         if (!isEnumerateAudioDevices) initEnumerateAudioDevices();
         rc.produce(RoomClient.mediaType.audio, microphoneSelect.value);
         rc.updatePeerInfo(peer_name, rc.peer_id, 'audio', true);
         // rc.resumeProducer(RoomClient.mediaType.audio);
     };
     stopAudioButton.onclick = () => {
-        hide(stopAudioButton)
-        show(startAudioButton);
-        // setAudioButtonsDisabled(true);
+        // hide(stopAudioButton)
+        // show(startAudioButton);
+        setAudioButtonsDisabled(true);
         rc.closeProducer(RoomClient.mediaType.audio);
         rc.updatePeerInfo(peer_name, rc.peer_id, 'audio', false);
         // rc.pauseProducer(RoomClient.mediaType.audio);
@@ -1349,11 +1354,15 @@ function setSelectsInit() {
         //
         console.log('04.4 ----> Get Local Storage Devices after', lS.getLocalStorageDevices());
     }
-    if (initVideoSelect.value) changeCamera(initVideoSelect.value);
+    if (initVideoSelect.value) {
+        console.log(2);
+        changeCamera(initVideoSelect.value);
+    }
 }
 
 async function changeCamera(deviceId) {
     if (initStream) {
+        console.log(deviceId,initStream)
         stopTracks(initStream);
         show(initVideo);
     }
@@ -1381,6 +1390,9 @@ async function changeCamera(deviceId) {
                 '04.5 ----> Success attached init cam video stream',
                 initStream.getVideoTracks()[0].getSettings(),
             );
+            if(!isDefaultVideoOn){
+                initVideo.className = 'hidden';
+            }
         })
         .catch((err) => {
             console.error('[Error] changeCamera', err);
