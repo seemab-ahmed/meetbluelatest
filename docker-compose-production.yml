@@ -2,11 +2,11 @@ version: '3'
 
 services:
     meetbluesfu:
-        image: tsoft410/meetblue:latest
+        image: dbw/meetblue:production
         build:
             context: .
-            dockerfile: Dockerfile
-        container_name: meetbluesfu
+            dockerfile: DockerfileProduction
+        container_name: meetblue_production
         hostname: meetbluesfu
         restart: unless-stopped
         volumes:

@@ -2,11 +2,11 @@
 
 const Logger = require('../../src/Logger');
 const log = new Logger('Server');
-const dotenv = require('dotenv');
-const path = require('path');
-dotenv.config({
-    path: path.resolve(__dirname, '../../.env.local')
-  });
+// const dotenv = require('dotenv');
+// const path = require('path');
+// dotenv.config({
+//     path: path.resolve(__dirname, '../../.env.local')
+//   });
 
 const fetch = require('node-fetch');
 

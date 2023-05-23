@@ -1,13 +1,13 @@
 version: '3'
 
 services:
-    mirotalksfu:
-        image: mirotalk/sfu:latest
+    meetbluesfu:
+        image: dbw/meetblue:development
         build:
             context: .
-            dockerfile: Dockerfile
-        container_name: mirotalksfu
-        hostname: mirotalksfu
+            dockerfile: DockerfileDevelopment
+        container_name: meetblue_development
+        hostname: meetbluesfu
         restart: unless-stopped
         volumes:
             - ./app/src/config.js:/src/app/src/config.js:ro

@@ -689,17 +689,10 @@ function handleAudio(e) {
 }
 
 function handleVideo(e) {
+    isVideoAllowed = !isDefaultVideoOn ? true : !isVideoAllowed;
     isDefaultVideoOn = true;
-    isVideoAllowed = isVideoAllowed ? false : true;
     e.target.className = 'fas fa-video' + (isVideoAllowed ? '' : '-slash');
     setColor(e.target, isVideoAllowed ? 'white' : 'red');
-    setColor(startVideoButton, isVideoAllowed ? 'white' : 'red');
-    checkInitVideo(isVideoAllowed);
-}
-function handleVideoD() {
-    isVideoAllowed = isVideoAllowed ? false : true;
-    // e.target.className = 'fas fa-video' + (isVideoAllowed ? '' : '-slash');
-    // setColor(e.target, isVideoAllowed ? 'white' : 'red');
     setColor(startVideoButton, isVideoAllowed ? 'white' : 'red');
     checkInitVideo(isVideoAllowed);
 }
@@ -729,9 +722,7 @@ function checkInitVideo(isVideoAllowed) {
         if (initVideoSelect.value) changeCamera(initVideoSelect.value);
         sound('joined');
     } else {
-        console.log('else');
         if (initStream) {
-            console.log('initstream')
             stopTracks(initStream);
             hide(initVideo);
             sound('left');
@@ -1362,7 +1353,6 @@ function setSelectsInit() {
 
 async function changeCamera(deviceId) {
     if (initStream) {
-        console.log(deviceId,initStream)
         stopTracks(initStream);
         show(initVideo);
     }

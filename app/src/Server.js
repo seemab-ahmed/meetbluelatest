@@ -67,7 +67,8 @@ const bodyParser = require('body-parser');
 const organizer = require('../api/organizer/organizer');
 
 const app = express();
-dotenv.config({path: path.resolve(__dirname, '../.env.local')});
+// dotenv.config({path: path.resolve(__dirname, '../.env.local')});
+dotenv.config();
 
 const options = {
     cert: fs.readFileSync(path.join(__dirname, config.server.ssl.cert), 'utf-8'),

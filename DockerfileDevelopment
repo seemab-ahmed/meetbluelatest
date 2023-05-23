@@ -13,4 +13,4 @@ RUN npm install
 COPY app app
 COPY public public
 
-CMD npm start
+CMD npm run dev

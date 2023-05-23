@@ -2776,7 +2776,7 @@ class RoomClient {
             console.log('Send message:', data);
             this.socket.emit('message', data);
         }
-        this.setMsgAvatar('right', this.peer_name, data.personal_color);
+        this.setMsgAvatar('right', this.peer_name, this.peer_info.personal_color);
         this.appendMessage('right', this.rightMsgAvatar, this.peer_name, this.peer_id, peer_msg, 'all', 'all');
         this.cleanMessage();
     }
@@ -2820,7 +2820,7 @@ class RoomClient {
                 };
                 console.log('Send message:', data);
                 this.socket.emit('message', data);
-                this.setMsgAvatar('right', this.peer_name, data.personal_color);
+                this.setMsgAvatar('right', this.peer_name, this.peer_info.personal_color);
                 this.appendMessage(
                     'right',
                     this.rightMsgAvatar,
